@@ -1,7 +1,7 @@
 .container {
   padding: 0 2rem;
 }
-
+/* 
 .main {
   min-height: 100vh;
   padding: 4rem 0;
@@ -10,7 +10,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-}
+} */
 
 .footer {
   display: flex;
@@ -126,4 +126,14 @@
   .logo img {
     filter: invert(1);
   }
+}
+
+.dropZone {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed #ccc;
+  border-radius: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
 }

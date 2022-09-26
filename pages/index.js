@@ -1,6 +1,56 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from 'next/head';
+import { useEffect, useRef, useState } from 'react';
+
+import styles from '../styles/Home.module.css';
+
+const ImageUploader = () => {
+  // react state for image file
+  const [imageFile, setImageFile] = useState(null);
+
+  const handleImageUpload = (e) => {
+    // get the image file from the event
+    const file = e.target.files[0];
+    // set the image file to the state
+    setImageFile(file);
+  };
+
+  // canvas ref
+  const canvasRef = useRef(null);
+
+  // draw the image to the canvas
+  const drawImage = (image) => {
+    // get the canvas context
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    // set the canvas width and height to the image width and height
+    canvas.width = image.width;
+    canvas.height = image.height;
+    // draw the image to the canvas
+    ctx.drawImage(image, 0, 0);
+  };
+
+  // when the image file changes, draw the image to the canvas
+  useEffect(() => {
+    if (imageFile) {
+      // create an image object
+      const image = new Image();
+      // set the image src to the image file
+      image.src = URL.createObjectURL(imageFile);
+      // when the image loads, draw the image to the canvas
+      image.onload = () => {
+        drawImage(image);
+      };
+    }
+  }, [imageFile]);
+
+  return (
+    <div>
+      <input type="file" onChange={handleImageUpload} />
+      {imageFile && <img src={URL.createObjectURL(imageFile)} />}
+      <canvas ref={canvasRef} />
+    </div>
+  );
+};
 
 export default function Home() {
   return (
@@ -12,44 +62,8 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <h1 className={styles.title}>Welcome to OCR Demo</h1>
+        <ImageUploader />
       </main>
 
       <footer className={styles.footer}>
@@ -60,10 +74,10 @@ export default function Home() {
         >
           Powered by{' '}
           <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
+            <img src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
+  );
 }
