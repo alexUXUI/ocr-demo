@@ -16,6 +16,7 @@ const ImageUploader = () => {
 
   // canvas ref
   const canvasRef = useRef(null);
+  const frameCounterCanvasRef = useRef(null);
 
   // draw the image to the canvas
   const drawImage = (image) => {
@@ -29,7 +30,7 @@ const ImageUploader = () => {
     ctx.drawImage(image, 0, 0);
   };
 
-  // when the image file changes, draw the image to the canvas
+  // when the image file changes, draw the full image to the main canvas
   useEffect(() => {
     if (imageFile) {
       // create an image object
@@ -43,11 +44,41 @@ const ImageUploader = () => {
     }
   }, [imageFile]);
 
+  // when the image file changes, draw the bottom left 100 x 45 pixels to the frame counter canvas
+  useEffect(() => {
+    if (imageFile) {
+      // create an image object
+      const image = new Image();
+      // set the image src to the image file
+      image.src = URL.createObjectURL(imageFile);
+      // when the image loads, draw the image to the canvas
+      image.onload = () => {
+        // get the bottom left 100 x 45 pixels
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, canvas.height - 45, 100, 45);
+        console.log(imageData);
+        // create a canvas to draw the bottom left 100 x 45 pixels
+        const frameCounterImage = frameCounterCanvasRef.current;
+        frameCounterImage.width = 100;
+        frameCounterImage.height = 45;
+        const ctx2 = frameCounterImage.getContext('2d');
+        ctx2.putImageData(imageData, 0, 0);
+      };
+    }
+  }, [imageFile]);
+
   return (
     <div>
       <input type="file" onChange={handleImageUpload} />
-      {imageFile && <img src={URL.createObjectURL(imageFile)} />}
-      <canvas ref={canvasRef} />
+      <div>
+        <h1>Image</h1>
+        <canvas ref={canvasRef} />
+      </div>
+      <div>
+        <h1>Frame Counter</h1>
+        <canvas ref={frameCounterCanvasRef} />
+      </div>
     </div>
   );
 };
