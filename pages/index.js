@@ -12,17 +12,25 @@ async function loadWorker() {
   return worker;
 }
 
-const useOCR = (image) => {
+const useTesseractLoader = () => {
   const [worker, setWorker] = useState(null);
-  const [ocrResult, setOcrResult] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!worker) {
+      setLoading(true);
       loadWorker().then((worker) => {
         setWorker(worker);
+        setLoading(false);
       });
     }
-  }, [worker]);
+  }, []);
+
+  return { worker, loading };
+};
+
+const useOCR = (worker, image) => {
+  const [ocrResult, setOcrResult] = useState(null);
 
   useEffect(() => {
     if (worker && image) {
@@ -40,7 +48,9 @@ const ImageUploader = () => {
   const [imageFile, setImageFile] = useState(null);
   const [frameCounterImage, setFrameCounterImage] = useState();
 
-  const { ocrResult } = useOCR(frameCounterImage);
+  const { loading, worker } = useTesseractLoader();
+
+  const { ocrResult } = useOCR(worker, frameCounterImage);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -96,6 +106,10 @@ const ImageUploader = () => {
     }
   }, [imageFile]);
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
       <h1>Upload an Image</h1>
@@ -142,19 +156,34 @@ const VideoUploader = () => {
 
   useEffect(() => {
     if (videoFile) {
+      let canvasInterval;
+
       // create a video element to play the video
       const video = document.createElement('video');
 
       video.src = URL.createObjectURL(videoFile);
+
       video.onloadedmetadata = () => {
         playVideoOnCanvas(video);
       };
 
+      video.onpause = function () {
+        clearInterval(canvasInterval);
+      };
+
+      video.onended = function () {
+        clearInterval(canvasInterval);
+      };
+
+      video.requestVideoFrameCallback((time) => {
+        console.log(time);
+      });
+
       video.onplay = () => {
-        const interval = setInterval(() => {
+        clearInterval(canvasInterval);
+        canvasInterval = window.setInterval(() => {
           playVideoOnCanvas(video);
-        }, 1000);
-        return () => clearInterval(interval);
+        }, 1000 / 60);
       };
 
       video.play();
@@ -194,6 +223,7 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>OCR Demo</h1>
+        {/* <VideoUploader /> */}
         <ImageUploader />
       </main>
 
