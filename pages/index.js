@@ -44,7 +44,7 @@ function useVideoOCR(
         ctx.drawImage(video, 0, 0);
 
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-        const imageData = ctx.getImageData(20, canvas.height - 30, 75, 33);
+        const imageData = ctx.getImageData(20, canvas.height - 37, 75, 33);
 
         // convert imageData to an image
         const ocrCanvas = document.createElement('canvas');
@@ -89,12 +89,6 @@ function useVideoOCR(
           },
         ]);
 
-        // const newFrames = {
-        //   ...frames,
-        //   [timestamp]: ocrDataUrl,
-        // };
-
-        // setVidFrames(newFrames);
         video.requestVideoFrameCallback(updateCanvas);
       };
 
@@ -154,14 +148,6 @@ const VideoUploader = () => {
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     setVideoFile(file);
-  };
-
-  const loadingSpinner = () => {
-    return (
-      <div className={styles.loadingSpinner}>
-        <div className={styles.spinner}></div>
-      </div>
-    );
   };
 
   const AnimatedElipsis = () => {
