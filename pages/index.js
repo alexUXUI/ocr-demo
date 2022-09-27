@@ -21,6 +21,12 @@ const AnimatedElipsis = () => {
   return <span>{dots}</span>;
 };
 
+function getAverageColor(imageData) {
+  for (var i = 0, len = imageData.data.length, sum = 0; i < len; i += 4)
+    sum += imageData.data[i];
+  return sum / (len / 4);
+}
+
 function useVideoOCR(
   worker,
   videoFile,
@@ -53,16 +59,31 @@ function useVideoOCR(
         setIsFrameCounterPresent(false);
       };
 
+      video.onloadedmetadata = () => {
+        setIsVideoLoading(true);
+        video.play();
+        updateCanvas();
+      };
+
       const updateCanvas = (timestamp, meta) => {
+        // main canvas init
         const ctx = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
 
+        // get the full image
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
         const imageData = ctx.getImageData(20, canvas.height - 37, 75, 33);
 
-        // convert imageData to an image
+        // frame counter detection
+        if (getAverageColor(imageData) < 250) {
+          setIsFrameCounterPresent(true);
+        } else {
+          setIsFrameCounterPresent(false);
+        }
+
+        // get the frame counter image
         const ocrCanvas = document.createElement('canvas');
         ocrCanvas.width = imageData.width;
         ocrCanvas.height = imageData.height;
@@ -70,22 +91,7 @@ function useVideoOCR(
         ocrCtx.putImageData(imageData, 0, 0);
         const ocrDataUrl = ocrCanvas.toDataURL('image/jpeg', 1.0);
 
-        function getAverageColor(imageData) {
-          for (var i = 0, len = imageData.data.length, sum = 0; i < len; i += 4)
-            sum += imageData.data[i];
-          return sum / (len / 4);
-        }
-
-        console.log(getAverageColor(imageData));
-
-        if (getAverageColor(imageData) < 250) {
-          setIsFrameCounterPresent(true);
-        } else {
-          setIsFrameCounterPresent(false);
-        }
-
-        // get the bottom left 100 x 45 pixels
-        // create a canvas to draw the bottom left 100 x 45 pixels
+        // render the framecounter image on a canvas for debugging
         const frameCounterCanvas = frameCounterCanvasRef.current;
         frameCounterCanvas.width = 100;
         frameCounterCanvas.height = 45;
@@ -98,6 +104,7 @@ function useVideoOCR(
           frameCounterImage.src = URL.createObjectURL(blob);
         });
 
+        // create a promise for the OCR process
         setOcrPromises((ocrPromises) => [
           ...ocrPromises,
           {
@@ -107,13 +114,8 @@ function useVideoOCR(
           },
         ]);
 
+        // get the neext frame
         video.requestVideoFrameCallback(updateCanvas);
-      };
-
-      video.onloadedmetadata = () => {
-        setIsVideoLoading(true);
-        video.play();
-        updateCanvas();
       };
     }
   }, [videoFile, canvasRef, frameCounterCanvasRef]);
@@ -174,7 +176,13 @@ const VideoUploader = () => {
       <div>
         <h1>Video Frame</h1>
         {!videoFile && <p>Upload a video to see the frames</p>}
-        <h1>{isVideoLoading ? 'processing...' : null}</h1>
+        <h1>
+          {isVideoLoading ? (
+            <div>
+              preprocessing video <AnimatedElipsis />
+            </div>
+          ) : null}
+        </h1>
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
         <video ref={videoRef} />
@@ -186,7 +194,14 @@ const VideoUploader = () => {
           )}
           <canvas ref={frameCounterCanvasRef} />
         </div>
-
+        {isDone && !output && (
+          <>
+            <h2>Done preprocessing ✅</h2>
+            <h2>
+              Starting OCR post processing 👀 <AnimatedElipsis />
+            </h2>
+          </>
+        )}
         {isVideoLoading ? null : (
           <Frames vidFrames={output} isOCRProcessing={isOCRProcessing} />
         )}
