@@ -1,12 +1,9 @@
 import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
+import { Frames } from '../components/output';
 import { useLoadOCR } from '../hooks/tesseract.hook';
 
 import styles from '../styles/Home.module.css';
-
-let frames = [];
-
-let promises = [];
 
 function useVideoOCR(
   worker,
@@ -16,7 +13,7 @@ function useVideoOCR(
   videoRef
 ) {
   const [isVideoLoading, setIsVideoLoading] = useState(false);
-  const [vidFrames, setVidFrames] = useState({});
+  const [vidFrames, setVidFrames] = useState(null);
   const [ocrPromises, setOcrPromises] = useState([]);
   const [isDone, setIsDone] = useState(false);
   const [isFrameCounterPresent, setIsFrameCounterPresent] = useState(false);
@@ -47,14 +44,14 @@ function useVideoOCR(
         ctx.drawImage(video, 0, 0);
 
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-        const ocrImageData = ctx.getImageData(0, canvas.height - 45, 100, 37);
+        const imageData = ctx.getImageData(20, canvas.height - 30, 75, 33);
 
-        // convert ocrImageData to an image
+        // convert imageData to an image
         const ocrCanvas = document.createElement('canvas');
-        ocrCanvas.width = ocrImageData.width;
-        ocrCanvas.height = ocrImageData.height;
+        ocrCanvas.width = imageData.width;
+        ocrCanvas.height = imageData.height;
         const ocrCtx = ocrCanvas.getContext('2d');
-        ocrCtx.putImageData(ocrImageData, 0, 0);
+        ocrCtx.putImageData(imageData, 0, 0);
         const ocrDataUrl = ocrCanvas.toDataURL('image/jpeg', 1.0);
 
         const zoomedInimageData = ctx.getImageData(
@@ -63,15 +60,14 @@ function useVideoOCR(
           100,
           37
         );
-        const imageData = ctx.getImageData(20, canvas.height - 30, 75, 33);
 
         // get the data url of the imageData image
-        const zoomedInCanvas = document.createElement('canvas');
-        zoomedInCanvas.width = zoomedInimageData.width;
-        zoomedInCanvas.height = zoomedInimageData.height;
-        const zoomedInCtx = zoomedInCanvas.getContext('2d');
-        zoomedInCtx.putImageData(zoomedInimageData, 0, 0);
-        const zoomedInDataUrl = zoomedInCanvas.toDataURL('image/jpeg', 1.0);
+        // const zoomedInCanvas = document.createElement('canvas');
+        // zoomedInCanvas.width = zoomedInimageData.width;
+        // zoomedInCanvas.height = zoomedInimageData.height;
+        // const zoomedInCtx = zoomedInCanvas.getContext('2d');
+        // zoomedInCtx.putImageData(zoomedInimageData, 0, 0);
+        // const zoomedInDataUrl = zoomedInCanvas.toDataURL('image/jpeg', 1.0);
 
         function getAverageColor(imageData) {
           for (var i = 0, len = imageData.data.length, sum = 0; i < len; i += 4)
@@ -104,33 +100,21 @@ function useVideoOCR(
           {
             timestamp,
             fullImage: dataUrl,
-            frameCounterImage: zoomedInDataUrl,
+            frameCounterImage: ocrDataUrl,
           },
         ]);
 
-        frames.push({
-          timestamp,
-          fullImage: dataUrl,
-          frameCounterImage: zoomedInDataUrl,
-        });
-
         const newFrames = {
           ...frames,
-          [timestamp]: zoomedInDataUrl,
+          [timestamp]: ocrDataUrl,
         };
 
         setVidFrames(newFrames);
-
-        promises.push(worker.recognize(zoomedInDataUrl));
-
         video.requestVideoFrameCallback(updateCanvas);
       };
 
-      // Attach Video Event listeners
       video.onloadedmetadata = () => {
-        // console.log('METADATA');
         setIsVideoLoading(true);
-
         video.play();
         updateCanvas();
       };
@@ -184,23 +168,13 @@ const VideoUploader = () => {
   );
 
   if (isDone) {
-    console.log('vidFrames', vidFrames);
-    console.log('frames', frames);
-    console.log('ocrPromises', ocrPromises);
-
     if (!isOCRProcessing) {
       resolvePromises(ocrPromises, worker, setIsOCRProcessing).then(
         (promises) => {
-          console.log('promises', promises);
           setOutput(promises);
         }
       );
     }
-
-    // resolvePromises(ocrPromises, worker).then((data) => {
-    //   setIsOCRProcessing(false);
-    //   setOutput(data);
-    // });
   }
 
   const handleVideoUpload = (e) => {
@@ -232,54 +206,6 @@ const VideoUploader = () => {
         )}
       </div>
     </div>
-  );
-};
-
-const Frames = ({ vidFrames, isOCRProcessing }) => {
-  if (isOCRProcessing) {
-    return <h1>Post Processing Video</h1>;
-  }
-  return (
-    <table style={{ width: '100%' }}>
-      <thead>
-        <tr>
-          <th>Timestamp</th>
-          <th>Full Image</th>
-          <th>Frame Counter Image</th>
-          <th>Text</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {vidFrames &&
-          vidFrames
-            .sort((a, b) => {
-              // sort by timestamp
-              return a.timestamp - b.timestamp;
-            })
-            .map((frame, idx) => {
-              console.log('frame', frame);
-              return (
-                <tr key={idx}>
-                  <td>{frame.timestamp}</td>
-                  <td>
-                    <img src={frame.fullImage} style={{ maxHeight: 200 }} />
-                  </td>
-                  <td>
-                    <img
-                      src={frame.frameCounterImage}
-                      width={frame.width}
-                      height={frame.height}
-                    />
-                  </td>
-                  <td>
-                    <h1>{frame.text}</h1>
-                  </td>
-                </tr>
-              );
-            })}
-      </tbody>
-    </table>
   );
 };
 
