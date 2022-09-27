@@ -98,14 +98,19 @@ const ImageUploader = () => {
 
   return (
     <div>
+      <h1>Upload an Image</h1>
       <input type="file" onChange={handleImageUpload} />
       <div>
         <h1>Input Image</h1>
-        <canvas ref={canvasRef} />
+        <div>
+          <canvas ref={canvasRef} />
+        </div>
       </div>
       <div>
         <h2>OCR Image Input</h2>
-        <canvas ref={frameCounterCanvasRef} />
+        <div>
+          <canvas ref={frameCounterCanvasRef} />
+        </div>
         {ocrResult ? (
           <>
             <h3>OCR text output</h3>
