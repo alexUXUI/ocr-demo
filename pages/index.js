@@ -90,8 +90,7 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>OCR Demo</h1>
-        {/* <VideoUploader /> */}
-        <ImageUploader />
+        <VideoUploader />
       </main>
 
       <footer className={styles.footer}>
