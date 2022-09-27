@@ -12,7 +12,7 @@ async function loadWorker() {
   return worker;
 }
 
-const useTesseractLoader = () => {
+const useLoadOCR = () => {
   const [worker, setWorker] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,26 +31,28 @@ const useTesseractLoader = () => {
 
 const useOCR = (worker, image) => {
   const [ocrResult, setOcrResult] = useState(null);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
 
   useEffect(() => {
     if (worker && image) {
+      setIsOcrLoading(true);
       worker.recognize(image).then(({ data }) => {
         console.log(data.text);
         setOcrResult(data.text);
+        setIsOcrLoading(false);
       });
     }
   }, [worker, image]);
 
-  return { ocrResult };
+  return { isOcrLoading, ocrResult };
 };
 
 const ImageUploader = () => {
   const [imageFile, setImageFile] = useState(null);
   const [frameCounterImage, setFrameCounterImage] = useState();
 
-  const { loading, worker } = useTesseractLoader();
-
-  const { ocrResult } = useOCR(worker, frameCounterImage);
+  const { loading, worker } = useLoadOCR();
+  const { isOcrLoading, ocrResult } = useOCR(worker, frameCounterImage);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -125,7 +127,9 @@ const ImageUploader = () => {
         <div>
           <canvas ref={frameCounterCanvasRef} />
         </div>
-        {ocrResult ? (
+        {isOcrLoading ? (
+          <div>loading...</div>
+        ) : ocrResult ? (
           <>
             <h3>OCR text output</h3>
             <p>{ocrResult}</p>
