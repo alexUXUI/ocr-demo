@@ -12,6 +12,10 @@
   align-items: center;
 } */
 
+.loadingSpinner {
+  margin: 0 auto;
+}
+
 .footer {
   display: flex;
   flex: 1;

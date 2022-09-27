@@ -54,21 +54,6 @@ function useVideoOCR(
         ocrCtx.putImageData(imageData, 0, 0);
         const ocrDataUrl = ocrCanvas.toDataURL('image/jpeg', 1.0);
 
-        const zoomedInimageData = ctx.getImageData(
-          0,
-          canvas.height - 35,
-          100,
-          37
-        );
-
-        // get the data url of the imageData image
-        // const zoomedInCanvas = document.createElement('canvas');
-        // zoomedInCanvas.width = zoomedInimageData.width;
-        // zoomedInCanvas.height = zoomedInimageData.height;
-        // const zoomedInCtx = zoomedInCanvas.getContext('2d');
-        // zoomedInCtx.putImageData(zoomedInimageData, 0, 0);
-        // const zoomedInDataUrl = zoomedInCanvas.toDataURL('image/jpeg', 1.0);
-
         function getAverageColor(imageData) {
           for (var i = 0, len = imageData.data.length, sum = 0; i < len; i += 4)
             sum += imageData.data[i];
@@ -104,12 +89,12 @@ function useVideoOCR(
           },
         ]);
 
-        const newFrames = {
-          ...frames,
-          [timestamp]: ocrDataUrl,
-        };
+        // const newFrames = {
+        //   ...frames,
+        //   [timestamp]: ocrDataUrl,
+        // };
 
-        setVidFrames(newFrames);
+        // setVidFrames(newFrames);
         video.requestVideoFrameCallback(updateCanvas);
       };
 
@@ -153,19 +138,8 @@ const VideoUploader = () => {
   const [output, setOutput] = useState(null);
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
 
-  const {
-    isVideoLoading,
-    vidFrames,
-    ocrPromises,
-    isDone,
-    isFrameCounterPresent,
-  } = useVideoOCR(
-    worker,
-    videoFile,
-    canvasRef,
-    frameCounterCanvasRef,
-    videoRef
-  );
+  const { isVideoLoading, ocrPromises, isDone, isFrameCounterPresent } =
+    useVideoOCR(worker, videoFile, canvasRef, frameCounterCanvasRef, videoRef);
 
   if (isDone) {
     if (!isOCRProcessing) {
@@ -180,6 +154,30 @@ const VideoUploader = () => {
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     setVideoFile(file);
+  };
+
+  const loadingSpinner = () => {
+    return (
+      <div className={styles.loadingSpinner}>
+        <div className={styles.spinner}></div>
+      </div>
+    );
+  };
+
+  const AnimatedElipsis = () => {
+    const [dots, setDots] = useState('.');
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (dots.length === 3) {
+          setDots('.');
+        } else {
+          setDots(dots + '.');
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }, [dots]);
+
+    return <span>{dots}</span>;
   };
 
   return (
@@ -204,6 +202,15 @@ const VideoUploader = () => {
         {isVideoLoading ? null : (
           <Frames vidFrames={output} isOCRProcessing={isOCRProcessing} />
         )}
+
+        {isDone && !isOCRProcessing ? (
+          <div>
+            <h2>Done pre-processing ✅</h2>
+            <h2>
+              Starting OCR post-processing 👀 <AnimatedElipsis />
+            </h2>
+          </div>
+        ) : null}
       </div>
     </div>
   );
