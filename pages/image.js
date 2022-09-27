@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLoadOCR, useOCR } from '../hooks/tesseract.hook';
 
 const ImageUploader = () => {
