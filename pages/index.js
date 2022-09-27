@@ -221,6 +221,10 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>OCR Demo</h1>
+        <p>
+          Disclaimer: this is highly unstable and only works in chrome at the
+          moment ⚠️
+        </p>
         <VideoUploader />
       </main>
 
