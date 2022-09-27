@@ -12,6 +12,7 @@ export const Frames = ({ vidFrames, isOCRProcessing }) => {
   if (!vidFrames?.length) {
     return <h1>Processing</h1>;
   }
+
   return (
     <table style={{ width: '100%' }}>
       <thead>

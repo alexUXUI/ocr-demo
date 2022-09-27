@@ -5,6 +5,22 @@ import { useLoadOCR } from '../hooks/tesseract.hook';
 
 import styles from '../styles/Home.module.css';
 
+const AnimatedElipsis = () => {
+  const [dots, setDots] = useState('.');
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (dots.length === 3) {
+        setDots('.');
+      } else {
+        setDots(dots + '.');
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [dots]);
+
+  return <span>{dots}</span>;
+};
+
 function useVideoOCR(
   worker,
   videoFile,
@@ -60,7 +76,9 @@ function useVideoOCR(
           return sum / (len / 4);
         }
 
-        if (getAverageColor(imageData) < 230) {
+        console.log(getAverageColor(imageData));
+
+        if (getAverageColor(imageData) < 250) {
           setIsFrameCounterPresent(true);
         } else {
           setIsFrameCounterPresent(false);
@@ -150,22 +168,6 @@ const VideoUploader = () => {
     setVideoFile(file);
   };
 
-  const AnimatedElipsis = () => {
-    const [dots, setDots] = useState('.');
-    useEffect(() => {
-      const interval = setInterval(() => {
-        if (dots.length === 3) {
-          setDots('.');
-        } else {
-          setDots(dots + '.');
-        }
-      }, 500);
-      return () => clearInterval(interval);
-    }, [dots]);
-
-    return <span>{dots}</span>;
-  };
-
   return (
     <div>
       <input type="file" onChange={handleVideoUpload} />
@@ -188,15 +190,6 @@ const VideoUploader = () => {
         {isVideoLoading ? null : (
           <Frames vidFrames={output} isOCRProcessing={isOCRProcessing} />
         )}
-
-        {isDone && !isOCRProcessing ? (
-          <div>
-            <h2>Done pre-processing ✅</h2>
-            <h2>
-              Starting OCR post-processing 👀 <AnimatedElipsis />
-            </h2>
-          </div>
-        ) : null}
       </div>
     </div>
   );
