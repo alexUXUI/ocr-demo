@@ -1,43 +1,68 @@
 import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
+import { createWorker } from 'tesseract.js';
 
 import styles from '../styles/Home.module.css';
 
+async function loadWorker() {
+  const worker = createWorker();
+  await worker.load();
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  return worker;
+}
+
+const useOCR = (image) => {
+  const [worker, setWorker] = useState(null);
+  const [ocrResult, setOcrResult] = useState(null);
+
+  useEffect(() => {
+    if (!worker) {
+      loadWorker().then((worker) => {
+        setWorker(worker);
+      });
+    }
+  }, [worker]);
+
+  useEffect(() => {
+    if (worker && image) {
+      worker.recognize(image).then(({ data }) => {
+        console.log(data.text);
+        setOcrResult(data.text);
+      });
+    }
+  }, [worker, image]);
+
+  return { ocrResult };
+};
+
 const ImageUploader = () => {
-  // react state for image file
   const [imageFile, setImageFile] = useState(null);
+  const [frameCounterImage, setFrameCounterImage] = useState();
+
+  const { ocrResult } = useOCR(frameCounterImage);
 
   const handleImageUpload = (e) => {
-    // get the image file from the event
     const file = e.target.files[0];
-    // set the image file to the state
     setImageFile(file);
   };
 
-  // canvas ref
   const canvasRef = useRef(null);
   const frameCounterCanvasRef = useRef(null);
 
-  // draw the image to the canvas
   const drawImage = (image) => {
-    // get the canvas context
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    // set the canvas width and height to the image width and height
     canvas.width = image.width;
     canvas.height = image.height;
-    // draw the image to the canvas
     ctx.drawImage(image, 0, 0);
   };
 
   // when the image file changes, draw the full image to the main canvas
   useEffect(() => {
     if (imageFile) {
-      // create an image object
       const image = new Image();
-      // set the image src to the image file
       image.src = URL.createObjectURL(imageFile);
-      // when the image loads, draw the image to the canvas
       image.onload = () => {
         drawImage(image);
       };
@@ -47,23 +72,26 @@ const ImageUploader = () => {
   // when the image file changes, draw the bottom left 100 x 45 pixels to the frame counter canvas
   useEffect(() => {
     if (imageFile) {
-      // create an image object
       const image = new Image();
-      // set the image src to the image file
       image.src = URL.createObjectURL(imageFile);
-      // when the image loads, draw the image to the canvas
       image.onload = () => {
         // get the bottom left 100 x 45 pixels
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, canvas.height - 45, 100, 45);
-        console.log(imageData);
+        const imageData = ctx.getImageData(0, canvas.height - 45, 100, 37);
         // create a canvas to draw the bottom left 100 x 45 pixels
-        const frameCounterImage = frameCounterCanvasRef.current;
-        frameCounterImage.width = 100;
-        frameCounterImage.height = 45;
-        const ctx2 = frameCounterImage.getContext('2d');
-        ctx2.putImageData(imageData, 0, 0);
+        const frameCounterCanvas = frameCounterCanvasRef.current;
+        frameCounterCanvas.width = 100;
+        frameCounterCanvas.height = 45;
+        const frameCounterCtx = frameCounterCanvas.getContext('2d');
+        frameCounterCtx.putImageData(imageData, 0, 0);
+
+        // turn the imageData into a blob
+        frameCounterCanvas.toBlob((blob) => {
+          const frameCounterImage = new Image();
+          frameCounterImage.src = URL.createObjectURL(blob);
+          setFrameCounterImage(frameCounterImage);
+        });
       };
     }
   }, [imageFile]);
@@ -72,12 +100,79 @@ const ImageUploader = () => {
     <div>
       <input type="file" onChange={handleImageUpload} />
       <div>
-        <h1>Image</h1>
+        <h1>Input Image</h1>
         <canvas ref={canvasRef} />
       </div>
       <div>
-        <h1>Frame Counter</h1>
+        <h2>OCR Image Input</h2>
         <canvas ref={frameCounterCanvasRef} />
+        {ocrResult ? (
+          <>
+            <h3>OCR text output</h3>
+            <p>{ocrResult}</p>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const VideoUploader = () => {
+  const [videoFile, setVideoFile] = useState(null);
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    setVideoFile(file);
+  };
+
+  const canvasRef = useRef(null);
+
+  const playVideoOnCanvas = (video) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+  };
+
+  useEffect(() => {
+    if (videoFile) {
+      // create a video element to play the video
+      const video = document.createElement('video');
+
+      video.src = URL.createObjectURL(videoFile);
+      video.onloadedmetadata = () => {
+        playVideoOnCanvas(video);
+      };
+
+      video.onplay = () => {
+        const interval = setInterval(() => {
+          playVideoOnCanvas(video);
+        }, 1000);
+        return () => clearInterval(interval);
+      };
+
+      video.play();
+
+      return () => {
+        video.pause();
+        video.remove();
+      };
+    }
+  }, [videoFile]);
+
+  // when the video file changes, play the video on the canvas
+  useEffect(() => {
+    if (videoFile) {
+    }
+  }, [videoFile]);
+
+  return (
+    <div>
+      <input type="file" onChange={handleVideoUpload} />
+      <div>
+        <h1>Video Frame</h1>
+        <canvas ref={canvasRef} />
       </div>
     </div>
   );
@@ -87,13 +182,13 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
-        <meta name="description" content="Generated by create next app" />
+        <title>OCR Demo</title>
+        <meta name="description" content="OCR Demo" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>Welcome to OCR Demo</h1>
+        <h1 className={styles.title}>OCR Demo</h1>
         <ImageUploader />
       </main>
 
@@ -103,10 +198,7 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <img src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
+          Powered by Product Science 💜
         </a>
       </footer>
     </div>
