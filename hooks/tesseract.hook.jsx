@@ -36,7 +36,9 @@ export const useOCR = (worker, image) => {
 };
 
 async function loadTesseract() {
-  const worker = createWorker();
+  const worker = createWorker({
+    // logger: (m) => console.log(m),
+  });
   await worker.load();
   await worker.loadLanguage('eng');
   await worker.initialize('eng');
